@@ -1,0 +1,245 @@
+{*<style>
+.features-value{
+max-height: 400px;
+overflow-y: scroll;
+}
+</style>*}
+<div class="dialog-background"></div>
+<form id="coupon-form" action="?plugin=coupons&module=settings&action=saveCoupon">
+    {$wa->csrf()}
+    <div class="dialog-window">
+        <div class="dialog-content">
+            <div class="dialog-content-indent">
+                <input type="hidden" name="coupon[id]" value="{$coupon.id|default:''|escape}" />
+                <h1>Купон</h1>
+                <div class="fields form">
+                    <div class="field">
+                        <div class="name">Код купона</div>
+                        <div class="value">
+                            <input class="large bold" type="text" name="coupon[code]" value="{$coupon.code|default:''|escape}" />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="name">Скидка</div>
+                        <div class="value">
+                            <select name="coupon[type]">
+                                {foreach $types as $type_id => $type_name}
+                                    <option value="{$type_id|escape}"{if $type_id == $coupon.type} selected{/if}>{$type_name|escape}</option>
+                                {/foreach}
+                            </select>
+                        </div>
+                        <div class="value bold" id="value-input-wrapper">
+                            <input type="text" class="numerical short bold" placeholder="0" name="coupon[value]" value="{$coupon.value|escape}">
+                            <span>%</span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="name">Сумма заказа</div>
+                        <div class="value">
+                            <input type="text" class="numerical short bold" placeholder="0" name="coupon[order_total]" value="{$coupon.order_total|default:''|escape}"> {$currency}
+                            <p class="hint">Сумма заказа, от которой начинает действовать купон</p>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="name">
+                            Максимальное кол-во использований
+                        </div>
+                        <div class="value">
+                            <input type="text" value="{$coupon.limit|default:''|escape}" name="coupon[limit]" class="numerical" placeholder="&#8734;">
+                            <p class="hint">Введите максимальное количество заказов, при оформлении которых разрешается указать этот купон. Чтобы отключить ограничение, оставьте поле пустым.</p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="name">
+                            Кол-во использований
+                        </div>
+                        <div class="value">
+                            <input type="text" value="{$coupon.used|default:''|escape}" name="coupon[used]" class="numerical" disabled="disabled">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="name">
+                            Дата истечения
+                        </div>
+                        <div class="value">
+                            <input type="text" value="{$coupon.expire_datetime|default:''|escape}" name="coupon[expire_datetime]" class="numerical">
+                            <a href="javascript:void(0)"><i class="icon16 calendar"></i></a>
+                            <p class="hint">Чтобы не устанавливать дату истечения, оставьте поле пустым.</p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="name">
+                            Комментарий
+                        </div>
+                        <div class="value">
+                            <textarea name="coupon[comment]">{$coupon.comment|default:''|escape}</textarea>
+                            <p class="hint">Необязательный комментарий для вашего удобства. Не будет показан покупателям.</p>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field">
+                            <div class="name">
+                                Выбрать товары 
+                            </div>
+
+                            <div class="value">
+                                <table class="zebra" id="coupons-products-table" style="width: 580px; margin-bottom: 20px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Список выбранных товаров</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {if !empty($coupons_products)}
+                                            {foreach $coupons_products as $coupons_product}
+                                                <tr>
+                                                    <td data-id="{$coupons_product.id|escape}" data-type="{$coupons_product.type|escape}" data-value="{$coupons_product.value|escape}">
+                                                        <input type="hidden" name="coupons_products[id][]" value="{$coupons_product.id|escape}" />
+                                                        <input type="hidden" name="coupons_products[type][]" value="{$coupons_product.type|escape}" />
+                                                        <input type="hidden" name="coupons_products[value][]" value="{$coupons_product.value|escape}" />
+
+                                                        {if $coupons_product.type == 'product'}
+                                                            {$url = "?action=products#/product/`$coupons_product.value`/"}
+                                                            {$icon = 'folders'}
+                                                            {$type = 'Товар'}
+                                                        {elseif $coupons_product.type == 'set'}
+                                                            {$url = "?action=products#/products/set_id=`$coupons_product.value`"}
+                                                            {$icon = 'ss set'}
+                                                            {$type = 'Список'}
+                                                        {elseif $coupons_product.type == 'category'}
+                                                            {$url = "?action=products#/products/category_id=`$coupons_product.value`"}
+                                                            {$icon = 'folder'}
+                                                            {$type = 'Категория'}
+                                                        {elseif $coupons_product.type == 'feature'}
+                                                            {$url = "?action=settings#/features/"}
+                                                            {$icon = 'ss features-bw'}
+                                                            {$type = 'Характеристика'}
+                                                            {$val = explode(':', $coupons_product.value)}
+                                                            {$coupons_product.name = "`$features_filter[$val.0].name|default:'Не определено'`: `$features_filter[$val.0].values[$val.1]|default:'Не определено'`"}
+                                                        {/if}
+
+                                                        <a class="float-left" href="{$url}" target="_blank">
+                                                            <i class="icon16 {$icon}"></i>
+                                                            {$type}
+                                                            <strong>{$coupons_product.name|escape}</strong>
+
+                                                        </a>
+                                                        <a class="delete-coupons-products-button float-right" href="#"><i class="icon16 delete"></i></a>
+                                                    </td>
+                                                </tr>
+                                            {/foreach}
+                                        {/if}
+                                    </tbody>
+                                </table>
+
+                                <div class="sidebar left200px">
+                                    <ul class="menu-v">
+                                        <li>
+                                            <label class="black"><i class="icon16 ss set"></i><input type="radio" value="set" name="hash"> Списки</label>
+                                        </li>
+                                        <li>
+                                            <label class="black"><i class="icon16 folder"></i><input type="radio" value="categories" name="hash"> Категории</label>
+                                        </li>
+                                        <li>
+                                            <label class="black"><i class="icon16 folders"></i><input type="radio" value="product" name="hash"> Товары</label>
+                                        </li>
+                                        <li>
+                                            <label class="black"><i class="icon16 ss features-bw"></i><input type="radio" value="features" name="hash"> Характеристики</label>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="value js-hash-values js-hash-set" style="width: 400px;">
+                                    <div class="bordered-left" style="padding-left: 20px;">
+                                        <ul class="menu-v with-icons">
+                                            {foreach $sets as $set}
+                                                <li>
+                                                    <label title="{$set.id}">
+                                                        <i class="icon16 {if $set.type == shopSetModel::TYPE_DYNAMIC}funnel{else}ss set{/if}"></i>
+                                                        {$set.name|escape}
+                                                        <a class="add-coupons-products-button float-right" href="#" data-type="set" data-id="{$set.id}" data-name="{$set.name|escape}"><i class="icon16 add"></i></a>
+                                                    </label>
+                                                </li>
+                                            {/foreach}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="value js-hash-values js-hash-categories" style="width: 400px;">
+                                    <div class="bordered-left" style="padding-left: 20px;">
+                                        {include file="./include.categories.html" categories=$categories}
+                                        {*wa_print_tree tree=$categories elem='<label><i class="icon16 folder"></i> :name <a class="add-coupons-products-button float-right" href="#" data-type="category" data-id=":id" data-name=""><i class="icon16 add"></i></a></label>' class="menu-v with-icons"*}
+                                    </div>
+                                </div>
+                                <div class="value js-hash-values js-hash-product" >
+                                    <div class="bordered-left" style="padding-left: 20px;">
+                                        <p>Введите название товара:</p>
+                                        <input class="long" id="products-search" type="text" />
+                                        <a class="add-coupons-products-button" href="#" data-type="product" data-id="" data-name=""><i class="icon16 add"></i></a>
+                                    </div>
+                                </div>
+                                <div class="value js-hash-values js-hash-features" style="width: 400px;">
+                                    <div class="bordered-left" style="padding-left: 20px;">
+                                        {foreach $features_filter as $fid => $filter}
+                                            <div class="feature-block">
+                                                <b>
+                                                    {$filter.name|escape}
+                                                    <i class="icon16 rarr"></i>
+                                                </b>
+                                                <div class="values" style="display:none;">
+                                                    {if $filter.type == 'boolean'}
+                                                    {elseif isset($filter.min)}
+                                                    {else}
+                                                        <ul class="menu-v with-icons">
+                                                            {foreach $filter.values as $v_id => $v}
+                                                                <li>
+                                                                    <label>
+                                                                        {$v}
+                                                                        <a class="add-coupons-products-button float-right" href="#" data-type="feature" data-id="{$fid}:{$v_id}" data-name="{$filter.name|escape}: {$v|escape}"><i class="icon16 add"></i></a>
+                                                                    </label>
+                                                                </li>
+                                                            {/foreach}
+                                                        </ul>
+                                                    {/if}
+                                                </div>
+                                            </div>
+                                        {/foreach}
+                                    </div>
+                                </div>
+                                <div class="clear-both"></div>
+                                <p class="hint">Товары для которых срабатывает купон. Если не задано, купон срабатывает для всех товаров.</p>
+                            </div>
+                            <div class="clear-left"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-buttons">
+                <div class="dialog-buttons-gradient">
+                    <input type="submit" value="Сохранить" class="button green">
+                    <a class="cancel" href="#">Отмена</a>
+                </div>
+            </div>
+        </div>
+</form>
+<script type="text/javascript" src="{$wa_url}wa-content/js/jquery-plugins/jquery.tmpl.min.js"></script>
+{literal}
+    <script id="coupons-product-tmpl" type="text/x-jquery-tmpl">
+        <tr data-id="" data-type="${type}" data-value="${value}">
+        <td>
+        <input type="hidden" name="coupons_products[id][]" value="" />
+        <input type="hidden" name="coupons_products[type][]" value="${type}" />
+        <input type="hidden" name="coupons_products[value][]" value="${value}" />
+
+        <a class="float-left" href="${url}" target="_blank">
+        <i class="icon16 ${icon}"></i>
+        ${type_name} <strong>${name}</strong>
+        </a>
+        <a class="delete-coupons-products-button float-right" href="#"><i class="icon16 delete"></i></a>
+        </td>
+        </tr>
+    </script>
+{/literal}
+<script type="text/javascript" src="{$wa_app_static_url}plugins/coupons/js/settings-dialog.js?{$wa->version()}"></script>

@@ -1,0 +1,46 @@
+<div class="coupons-input-block">
+    <span class="coupons-label">Купон на скидку: </span><input class="tt-input" id="coupons-input" type="text" name="coupon_code" value="{$coupons_plugin_coupon.code|default:''|escape}" />
+    {if !empty($coupons_plugin_coupon)}
+        <input id="coupons-cancel" type="hidden" name="coupons-cancel" value="1" />
+        <input id="coupons-submit" type="submit" value="Отменить" />
+        {if $coupons_plugin_coupon.type == '%'}
+            <p>Ваш купон предоставляет скидку в {(float)$coupons_plugin_coupon.value}%</p>
+        {else}
+            <p>Ваш купон предоставляет скидку в {shop_currency($coupons_plugin_coupon.value, null, $coupons_plugin_coupon.type)}</p>
+        {/if}
+    {else}
+        <input id="coupons-cancel" type="hidden" name="coupons-cancel" value="0" />
+        <input id="coupons-submit" type="submit" value="Применить" />
+    {/if}
+
+</div>
+<script type="text/javascript">
+    $(function () {
+        $('#coupons-submit').click(function () {
+            var button = $(this);
+            button.attr('disabled', 'disabled');
+            $.ajax({
+                url: '{$wa->getUrl('shop/frontend/coupons')}',
+                data: {
+                    coupon_code: $('#coupons-input').val(),
+                    cancel: $('#coupons-cancel').val()
+                },
+                type: 'post',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status == 'ok') {
+                        location.reload();
+                    } else {
+                        alert(response.errors.join(','));
+                    }
+                    button.removeAttr('disabled');
+                },
+                error: function (response) {
+                    alert(response.responseText);
+                    button.removeAttr('disabled');
+                }
+            });
+            return false;
+        });
+    });
+</script>
