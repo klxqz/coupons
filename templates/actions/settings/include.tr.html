@@ -6,10 +6,17 @@
         {$coupon.value}
     </td>
     <td>
-        {$coupon.limit}
+        {if $coupon.limit > 0}
+            {$coupon.limit}
+        {else}
+            &#8734;
+        {/if}
     </td>
     <td>
-        {$coupon.used}
+        {$coupon.used} 
+    </td>
+    <td>
+        {(float)$coupon.order_total}
     </td>
     <td>
         {$coupon.expire_datetime}

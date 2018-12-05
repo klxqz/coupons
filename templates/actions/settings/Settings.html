@@ -47,18 +47,6 @@
         <div class="field-group"{if !$settings.status} style="display:none"{/if}>
             <div class="field">
                 <div class="name">
-                    Стандартный вывод в корзине. Форма ввода купона
-                </div>
-                <div class="value no-shift s-ibutton-checkbox">
-                    <input type="hidden" name="shop_coupons[frontend_cart_coupon_input]" value="0">
-                    <input type="checkbox" class="ibutton" name="shop_coupons[frontend_cart_coupon_input]" value="1"{if $settings.frontend_cart_coupon_input|default:1} checked{/if}>
-                    <p class="hint">Или используется хелпер-вывода <strong>{ldelim}shopCouponsPlugin::couponInput(){rdelim}</strong></p>
-                </div>
-            </div>
-        </div>
-        <div class="field-group"{if !$settings.status} style="display:none"{/if}>
-            <div class="field">
-                <div class="name">
                     Стандартные купоны Shop-Script
                 </div>
                 <div class="value no-shift s-ibutton-checkbox">
@@ -81,6 +69,7 @@
                                 <th>Значение</th>
                                 <th>Макс. кол-во использований</th>
                                 <th>Кол-во использований</th>
+                                <th>Сумма заказа</th>
                                 <th>Дата истечения</th>
                                 <th>Комментарий</th>
                                 <th></th>

@@ -2,94 +2,139 @@
 
 class shopCouponsPlugin extends shopPlugin {
 
+    static $orderCalculateDiscountOff = false;
+
     public function frontendCart() {
         if (!$this->getSettings('status')) {
             return;
         }
-        $html = '';
-        if ($this->getSettings('frontend_cart_coupon_input')) {
-            $html .= self::couponInput();
-        }
-        return $html;
-    }
 
-    public static function couponInput() {
-        if (!wa()->getPlugin('coupons')->getSettings('status')) {
+        if (waRequest::method() == 'post') {
+            $checkout_data = wa()->getStorage()->get('shop/checkout', array());
+            if ($coupon_code = waRequest::post('coupon_code')) {
+                $checkout_data['coupon_code'] = $coupon_code;
+            } elseif (isset($checkout_data['coupon_code'])) {
+                unset($checkout_data['coupon_code']);
+            }
+            wa()->getStorage()->set('shop/checkout', $checkout_data);
+        }
+
+        $checkout_data = wa()->getStorage()->get('shop/checkout', array());
+        if (empty($checkout_data['coupon_code'])) {
             return;
         }
-        $view = wa()->getView();
-        if ($coupon_code = wa()->getStorage()->get('shop/coupon_code')) {
-            if ($coupon = self::checkCoupon($coupon_code)) {
-                $view->assign('coupons_plugin_coupon', $coupon);
-            } else {
-                wa()->getStorage()->set('shop/coupon_code', '');
+        $coupon_code = $checkout_data['coupon_code'];
+
+        $coupon_discount = 0;
+        if ($discount = $this->getCouponDiscount($coupon_code)) {
+            if (!empty($discount['items'])) {
+                foreach ($discount['items'] as $item) {
+                    $coupon_discount += $item['discount'];
+                }
+            } elseif (!empty($discount['discount'])) {
+                $coupon_discount += $discount['discount'];
             }
         }
-        $template_path = wa()->getAppPath('plugins/coupons/templates/handlers/FrontendCart.CouponInput.html', 'shop');
-        $html = $view->fetch($template_path);
-        return $html;
+        if ($coupon_discount) {
+            $view = wa()->getView();
+            $view->assign('coupon_discount', $coupon_discount);
+        } else {
+            unset($checkout_data['coupon_code']);
+            wa()->getStorage()->set('shop/checkout', $checkout_data);
+        }
+    }
+
+    public function getCouponDiscount($coupon_code, $items = null, $currency = null) {
+        if (!($coupon = self::checkCoupon($coupon_code))) {
+            return false;
+        }
+
+        if (!$items) {
+            $cart = new shopCart();
+            $items = $cart->items();
+        }
+
+        if (!$currency) {
+            $currency = wa('shop')->getConfig()->getCurrency(false);
+        }
+
+        $total = 0;
+        foreach ($items as $item) {
+            $total += shop_currency($item['price'] * $item['quantity'], $item['currency'], wa('shop')->getConfig()->getCurrency(true), false);
+        }
+
+        if ($total < $coupon['order_total']) {
+            return false;
+        }
+
+        $discount = array();
+        $product_ids = array();
+        $enabled_products = array();
+        $coupons_products = array();
+
+        if ($coupon['coupon'] == 'coupons') {
+            foreach ($items as $item) {
+                $product_ids[] = $item['product_id'];
+            }
+
+            $coupons_products_model = new shopCouponsProductsPluginModel();
+            $coupons_products = $coupons_products_model->getByField('coupon_id', $coupon['id'], true);
+
+            foreach ($coupons_products as $coupons_product) {
+                if ($coupons_product['type'] == 'feature') {
+                    $val = explode(':', $coupons_product['value']);
+                    $feature_model = new shopFeatureModel();
+                    $feature = $feature_model->getById($val[0]);
+                    $feature_data = array($feature['code'] => $val[1]);
+                    $collection = new shopProductsCollection();
+                    $collection->filters($feature_data);
+                } else {
+                    $collection = new shopProductsCollection($coupons_product['type'] . '/' . $coupons_product['value']);
+                }
+                $collection->addWhere('`p`.`id` IN (' . implode(',', $product_ids) . ')');
+
+                self::$orderCalculateDiscountOff = true;
+                $ids = array_keys($collection->getProducts('*', 0, 99999));
+                self::$orderCalculateDiscountOff = false;
+                $enabled_products = array_merge($enabled_products, $ids);
+            }
+        }
+
+        if ($coupon['type'] == '%') {
+            foreach ($items as $item_id => $item) {
+                if ($item['type'] == 'product' && (in_array($item['product_id'], $enabled_products) || !$coupons_products)) {
+
+                    $discount['items'][$item_id] = array(
+                        'discount' => shop_currency($item['price'] * $coupon['value'] / 100.00, $item['currency'], $currency, false) * $item['quantity'],
+                        'description' => "Скидка по купону " . $coupon['code'] . " в размере " . (float) $coupon['value'] . "%"
+                    );
+                }
+            }
+        } else {
+            $discount = array(
+                'discount' => shop_currency($coupon['value'], $coupon['type'], $currency, false),
+                'description' => "Скидка по купону " . $coupon['code'] . " в размере " . shop_currency($coupon['value'], $coupon['type'], $currency)
+            );
+        }
+
+        return $discount;
     }
 
     public function orderCalculateDiscount($params) {
-        if (!$this->getSettings('status')) {
+        if (!$this->getSettings('status') || self::$orderCalculateDiscountOff) {
             return;
         }
-        if (!($coupon_code = wa()->getStorage()->get('shop/coupon_code'))) {
+        $checkout_data = wa()->getStorage()->get('shop/checkout', array());
+        if (empty($checkout_data['coupon_code'])) {
             return;
         }
+        $coupon_code = $checkout_data['coupon_code'];
 
-        if ($coupon = self::checkCoupon($coupon_code)) {
-            $discount = array();
-            $product_ids = array();
-            $enabled_products = array();
-            $coupons_products = array();
-
-            if ($coupon['coupon'] == 'coupons') {
-                foreach ($params['order']['items'] as $item) {
-                    $product_ids[] = $item['product_id'];
-                }
-
-                $coupons_products_model = new shopCouponsProductsPluginModel();
-                $coupons_products = $coupons_products_model->getByField('coupon_id', $coupon['id'], true);
-
-                foreach ($coupons_products as $coupons_product) {
-                    if ($coupons_product['type'] == 'feature') {
-                        $val = explode(':', $coupons_product['value']);
-                        $feature_model = new shopFeatureModel();
-                        $feature = $feature_model->getById($val[0]);
-                        $feature_data = array($feature['code'] => $val[1]);
-                        $collection = new shopProductsCollection();
-                        $collection->filters($feature_data);
-                    } else {
-                        $collection = new shopProductsCollection($coupons_product['type'] . '/' . $coupons_product['value']);
-                    }
-                    $collection->addWhere('`p`.`id` IN (' . implode(',', $product_ids) . ')');
-
-                    $ids = array_keys($collection->getProducts('*', 0, 99999));
-                    $enabled_products = array_merge($enabled_products, $ids);
-                }
-            }
-
-            if ($coupon['type'] == '%') {
-                foreach ($params['order']['items'] as $item_id => $item) {
-                    if ($item['type'] == 'product' && (in_array($item['product_id'], $enabled_products) || !$coupons_products)) {
-
-                        $discount['items'][$item_id] = array(
-                            'discount' => shop_currency($item['price'] * $coupon['value'] / 100.00, $item['currency'], $params['order']['currency'], false) * $item['quantity'],
-                            'description' => "Скидка по купону " . $coupon['code'] . " в размере " . (float) $coupon['value'] . "%"
-                        );
-                    }
-                }
-            } else {
-                $discount = array(
-                    'discount' => shop_currency($coupon['value'], $coupon['type'], $params['order']['currency'], false),
-                    'description' => "Скидка по купону " . $coupon['code'] . " в размере " . shop_currency($coupon['value'], $coupon['type'], $params['order']['currency'])
-                );
-            }
-
+        if ($discount = $this->getCouponDiscount($coupon_code, $params['order']['items'], $params['order']['currency'])) {
             return $discount;
         } else {
-            wa()->getStorage()->set('shop/coupon_code', '');
+            unset($checkout_data['coupon_code']);
+            wa()->getStorage()->set('shop/checkout', $checkout_data);
         }
     }
 
@@ -117,17 +162,23 @@ class shopCouponsPlugin extends shopPlugin {
     }
 
     public static function isEnabled($c) {
-        $result = $c['limit'] == 0 || $c['limit'] > $c['used'];
-        return $result && ($c['expire_datetime'] == '' || strtotime($c['expire_datetime']) > time());
+        if ($c == 'coupons') {
+            return wa()->getPlugin('coupons')->getSettings('status');
+        } else {
+            $result = $c['limit'] == 0 || $c['limit'] > $c['used'];
+            return $result && ($c['expire_datetime'] == '' || strtotime($c['expire_datetime']) > time());
+        }
     }
 
     public function orderActionCreate($params) {
         if (!$this->getSettings('status')) {
             return;
         }
-        if (!($coupon_code = wa()->getStorage()->get('shop/coupon_code'))) {
+        $checkout_data = wa()->getStorage()->get('shop/checkout', array());
+        if (empty($checkout_data['coupon_code'])) {
             return;
         }
+        $coupon_code = $checkout_data['coupon_code'];
         if (!($coupon = self::checkCoupon($coupon_code))) {
             return;
         }
@@ -151,7 +202,7 @@ class shopCouponsPlugin extends shopPlugin {
             'before_state_id' => $order['state_id'],
             'after_state_id' => $order['state_id'],
             'text' => 'Плагин «<a target="_blank" href="?action=plugins#/coupons/">Купоны</a>»: '
-            . 'К заказу был применен купон на скидку ' . $coupon_code . ' в размере ' . ((float) $coupon['value']) . $coupon['type'],
+            . 'К заказу был применен купон на скидку ' . $coupon_code . ' в размере ' . self::formatValue($coupon),
         );
         $log_model = new shopOrderLogModel();
         $log_model->add($log_data);
@@ -176,9 +227,6 @@ class shopCouponsPlugin extends shopPlugin {
                 return $coupon;
             }
         }
-
-
-
         return false;
     }
 
@@ -194,6 +242,10 @@ class shopCouponsPlugin extends shopPlugin {
         ) {
             $coupon_model->useOne($coupon['id']);
         }
+    }
+
+    public static function __callStatic($name, $arguments) {
+        waLog::log("Метод shopCouponsPlugin::$name() не существует.\nВозможно, данный метод устарел и больше не используется.");
     }
 
 }

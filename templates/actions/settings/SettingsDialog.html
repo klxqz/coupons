@@ -29,7 +29,7 @@ overflow-y: scroll;
                             </select>
                         </div>
                         <div class="value bold" id="value-input-wrapper">
-                            <input type="text" class="numerical short bold" placeholder="0" name="coupon[value]" value="{$coupon.value|escape}">
+                            <input type="text" class="numerical short bold" placeholder="0" name="coupon[value]" value="{(float)$coupon.value|escape}">
                             <span>%</span>
                         </div>
                     </div>
@@ -37,7 +37,7 @@ overflow-y: scroll;
                     <div class="field">
                         <div class="name">Сумма заказа</div>
                         <div class="value">
-                            <input type="text" class="numerical short bold" placeholder="0" name="coupon[order_total]" value="{$coupon.order_total|default:''|escape}"> {$currency}
+                            <input type="text" class="numerical short bold" placeholder="0" name="coupon[order_total]" value="{(float)$coupon.order_total|default:''|escape}"> {$currency}
                             <p class="hint">Сумма заказа, от которой начинает действовать купон</p>
                         </div>
                     </div>
