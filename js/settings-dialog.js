@@ -1,7 +1,73 @@
 $(document).ready(function () {
+    $('.js-hash-categories').on('click', '.collapse-handler-ajax', function () {
+        if ($(this).hasClass('rarr')) {
+            if ($(this).closest('label').next('ul').length) {
+                $(this).removeClass('rarr').addClass('darr');
+                $(this).closest('label').next('ul').show();
+            } else {
+                var self = $(this);
+                $.ajax({
+                    url: '?plugin=coupons&module=settings&action=getCategories',
+                    type: 'POST',
+                    data: {
+                        category_id: $(this).data('category-id')
+                    },
+                    dataType: 'json',
+                    success: function (data, textStatus) {
+                        if (data.status == 'ok') {
+                            self.removeClass('rarr').addClass('darr');
+                            self.closest('label').after(data.data.html);
+                        } else {
+                            alert(data.errors.join(', '));
+                        }
+                    }, error: function (jqXHR, textStatus, errorThrown) {
+                        loading.remove();
+                        alert(jqXHR.responseText);
+                    }
+                });
+            }
+        } else {
+            $(this).closest('label').next('ul').hide();
+            $(this).removeClass('darr').addClass('rarr');
+        }
+
+    });
+
+
     $('.feature-block b i').click(function () {
-        $(this).toggleClass('darr').toggleClass('rarr');
-        $(this).closest('.feature-block').find('.values').slideToggle('low');
+        if ($(this).hasClass('rarr')) {
+            if ($(this).closest('b').next('.values').length) {
+                $(this).removeClass('rarr').addClass('darr');
+                $(this).closest('b').next('.values').slideToggle('low');
+            } else {
+                var self = $(this);
+                $.ajax({
+                    url: '?plugin=coupons&module=settings&action=getFeatureValues',
+                    type: 'POST',
+                    data: {
+                        feature_id: $(this).data('feature-id')
+                    },
+                    dataType: 'json',
+                    success: function (data, textStatus) {
+                        if (data.status == 'ok') {
+                            self.removeClass('rarr').addClass('darr');
+                            self.closest('b').after(data.data.html);
+                            self.closest('b').next('.values').slideToggle('low');
+                        } else {
+                            alert(data.errors.join(', '));
+                        }
+                    }, error: function (jqXHR, textStatus, errorThrown) {
+                        loading.remove();
+                        alert(jqXHR.responseText);
+                    }
+                });
+            }
+        } else {
+            $(this).closest('b').next('.values').hide();
+            $(this).removeClass('darr').addClass('rarr');
+        }
+        //$(this).toggleClass('darr').toggleClass('rarr');
+        //$(this).closest('.feature-block').find('.values').slideToggle('low');
     });
 
     $('select[name="coupon[type]"]').change(function () {
@@ -82,10 +148,15 @@ $(document).ready(function () {
         }
     });
 
-    $('.add-coupons-products-button').click(function () {
+    $('.dialog-window').on('click', '.add-coupons-products-button', function () {
         var type_names = {"product": "Товар", "set": "Список", "category": "Категория", "feature": "Характеристика"};
         var icons = {"product": "folders", "set": "ss set", "category": "folder", "feature": "ss features-bw"};
-        var urls = {"product": "?action=products#/product/", "set": "?action=products#/products/set_id=", "category": "?action=products#/products/category_id=", "feature": "?action=settings#/features/"};
+        var urls = {
+            "product": "?action=products#/product/",
+            "set": "?action=products#/products/set_id=",
+            "category": "?action=products#/products/category_id=",
+            "feature": "?action=settings#/features/"
+        };
         var type = $(this).data('type');
         var id = $(this).data('id');
         var name = $(this).data('name');

@@ -182,28 +182,12 @@ overflow-y: scroll;
                                 </div>
                                 <div class="value js-hash-values js-hash-features" style="width: 400px;">
                                     <div class="bordered-left" style="padding-left: 20px;">
-                                        {foreach $features_filter as $fid => $filter}
+                                        {foreach $features as $fid => $feature}
                                             <div class="feature-block">
                                                 <b>
-                                                    {$filter.name|escape}
-                                                    <i class="icon16 rarr"></i>
+                                                    {$feature.name|escape}
+                                                    <i class="icon16 rarr" data-feature-id="{$fid}"></i>
                                                 </b>
-                                                <div class="values" style="display:none;">
-                                                    {if $filter.type == 'boolean'}
-                                                    {elseif isset($filter.min)}
-                                                    {else}
-                                                        <ul class="menu-v with-icons">
-                                                            {foreach $filter.values as $v_id => $v}
-                                                                <li>
-                                                                    <label>
-                                                                        {$v}
-                                                                        <a class="add-coupons-products-button float-right" href="#" data-type="feature" data-id="{$fid}:{$v_id}" data-name="{$filter.name|escape}: {$v|escape}"><i class="icon16 add"></i></a>
-                                                                    </label>
-                                                                </li>
-                                                            {/foreach}
-                                                        </ul>
-                                                    {/if}
-                                                </div>
                                             </div>
                                         {/foreach}
                                     </div>

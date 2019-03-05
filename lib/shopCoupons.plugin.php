@@ -1,10 +1,12 @@
 <?php
 
-class shopCouponsPlugin extends shopPlugin {
+class shopCouponsPlugin extends shopPlugin
+{
 
     static $orderCalculateDiscountOff = false;
 
-    public function frontendCart() {
+    public function frontendCart()
+    {
         if (!$this->getSettings('status')) {
             return;
         }
@@ -44,7 +46,8 @@ class shopCouponsPlugin extends shopPlugin {
         }
     }
 
-    public function getCouponDiscount($coupon_code, $items = null, $currency = null) {
+    public function getCouponDiscount($coupon_code, $items = null, $currency = null)
+    {
         if (!($coupon = self::checkCoupon($coupon_code))) {
             return false;
         }
@@ -88,6 +91,8 @@ class shopCouponsPlugin extends shopPlugin {
                     $feature_data = array($feature['code'] => $val[1]);
                     $collection = new shopProductsCollection();
                     $collection->filters($feature_data);
+                } elseif ($coupons_product['type'] == 'product') {
+                    $collection = new shopProductsCollection('id/' . $coupons_product['value']);
                 } else {
                     $collection = new shopProductsCollection($coupons_product['type'] . '/' . $coupons_product['value']);
                 }
@@ -106,7 +111,7 @@ class shopCouponsPlugin extends shopPlugin {
 
                     $discount['items'][$item_id] = array(
                         'discount' => shop_currency($item['price'] * $coupon['value'] / 100.00, $item['currency'], $currency, false) * $item['quantity'],
-                        'description' => "Скидка по купону " . $coupon['code'] . " в размере " . (float) $coupon['value'] . "%"
+                        'description' => "Скидка по купону " . $coupon['code'] . " в размере " . (float)$coupon['value'] . "%"
                     );
                 }
             }
@@ -120,7 +125,8 @@ class shopCouponsPlugin extends shopPlugin {
         return $discount;
     }
 
-    public function orderCalculateDiscount($params) {
+    public function orderCalculateDiscount($params)
+    {
         if (!$this->getSettings('status') || self::$orderCalculateDiscountOff) {
             return;
         }
@@ -138,7 +144,8 @@ class shopCouponsPlugin extends shopPlugin {
         }
     }
 
-    public static function formatValue($c, $curr = null) {
+    public static function formatValue($c, $curr = null)
+    {
         static $currencies = null;
         if ($currencies === null) {
             if ($curr) {
@@ -161,7 +168,8 @@ class shopCouponsPlugin extends shopPlugin {
         }
     }
 
-    public static function isEnabled($c) {
+    public static function isEnabled($c)
+    {
         if ($c == 'coupons') {
             return wa()->getPlugin('coupons')->getSettings('status');
         } else {
@@ -170,7 +178,8 @@ class shopCouponsPlugin extends shopPlugin {
         }
     }
 
-    public function orderActionCreate($params) {
+    public function orderActionCreate($params)
+    {
         if (!$this->getSettings('status')) {
             return;
         }
@@ -202,13 +211,14 @@ class shopCouponsPlugin extends shopPlugin {
             'before_state_id' => $order['state_id'],
             'after_state_id' => $order['state_id'],
             'text' => 'Плагин «<a target="_blank" href="?action=plugins#/coupons/">Купоны</a>»: '
-            . 'К заказу был применен купон на скидку ' . $coupon_code . ' в размере ' . self::formatValue($coupon),
+                . 'К заказу был применен купон на скидку ' . $coupon_code . ' в размере ' . self::formatValue($coupon),
         );
         $log_model = new shopOrderLogModel();
         $log_model->add($log_data);
     }
 
-    public static function checkCoupon($coupon_code) {
+    public static function checkCoupon($coupon_code)
+    {
         if (!wa()->getPlugin('coupons')->getSettings('status')) {
             return false;
         }
@@ -230,21 +240,23 @@ class shopCouponsPlugin extends shopPlugin {
         return false;
     }
 
-    private function useOne($coupon_code) {
+    private function useOne($coupon_code)
+    {
         $coupons_model = new shopCouponsPluginModel();
         $coupon_model = new shopCouponModel();
 
         if ($coupon = $coupons_model->getByField('code', $coupon_code)) {
             $coupons_model->updateById($coupon['id'], array('used' => $coupon['used'] + 1));
         } elseif (
-                wa()->getPlugin('coupons')->getSettings('shop_script_coupons') &&
-                ($coupon = $coupon_model->getByField('code', $coupon_code))
+            wa()->getPlugin('coupons')->getSettings('shop_script_coupons') &&
+            ($coupon = $coupon_model->getByField('code', $coupon_code))
         ) {
             $coupon_model->useOne($coupon['id']);
         }
     }
 
-    public static function __callStatic($name, $arguments) {
+    public static function __callStatic($name, $arguments)
+    {
         waLog::log("Метод shopCouponsPlugin::$name() не существует.\nВозможно, данный метод устарел и больше не используется.");
     }
 

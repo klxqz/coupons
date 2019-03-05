@@ -1,17 +1,14 @@
-{function name=categoriesTree class="" items=[]}
-    <ul{if !empty($class)} class="{$class}"{/if}>
-        {foreach $items as $category}
-            <li>
-                <label>
-                    <i class="icon16 folder"></i> {$category.name|escape}
-                    <a class="add-coupons-products-button float-right" href="#" data-type="category" data-id="{$category.id}" data-name="{$category.name|escape}"><i class="icon16 add"></i></a>
-                </label>
+<ul class="menu-v with-icons">
+    {foreach $categories as $category}
+        <li>
+            <label>
                 {if !empty($category.childs)}
-                    {categoriesTree class="menu-v" items=$category.childs}
+                    <i class="icon16 rarr overhanging collapse-handler-ajax" data-category-id="{$category.id}"></i>
                 {/if}
-            </li>
-        {/foreach}
-    </ul>
-{/function}
-
-{categoriesTree class="menu-v with-icons" items=$categories}
+                <i class="icon16 folder"></i> {$category.name|escape}
+                <a class="add-coupons-products-button float-right" href="#" data-type="category"
+                   data-id="{$category.id}" data-name="{$category.name|escape}"><i class="icon16 add"></i></a>
+            </label>
+        </li>
+    {/foreach}
+</ul>

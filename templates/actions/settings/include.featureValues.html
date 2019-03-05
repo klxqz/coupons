@@ -1,0 +1,15 @@
+<div class="values" style="display:none;">
+    <ul class="menu-v with-icons">
+        {foreach $feature.values as $v_id => $v}
+            <li>
+                <label>
+                    {$v}
+                    <a class="add-coupons-products-button float-right" href="#" data-type="feature"
+                       data-id="{$feature.id}:{$v_id}" data-name="{$feature.name|escape}: {$v|escape}">
+                        <i class="icon16 add"></i>
+                    </a>
+                </label>
+            </li>
+        {/foreach}
+    </ul>
+</div>
