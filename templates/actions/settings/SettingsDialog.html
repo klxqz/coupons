@@ -118,7 +118,7 @@ overflow-y: scroll;
                                                             {$icon = 'ss features-bw'}
                                                             {$type = 'Характеристика'}
                                                             {$val = explode(':', $coupons_product.value)}
-                                                            {$coupons_product.name = "`$features_filter[$val.0].name|default:'Не определено'`: `$features_filter[$val.0].values[$val.1]|default:'Не определено'`"}
+                                                            {$coupons_product.name = "`$features[$val.0].name|default:'Не определено'`: `$feature_values[$val.1]|default:'Не определено'`"}
                                                         {/if}
 
                                                         <a class="float-left" href="{$url}" target="_blank">

@@ -4,7 +4,7 @@ return array(
     'name' => 'Купоны',
     'description' => 'Скидка по купону на товар, список, категорию, характеристику...',
     'vendor' => 985310,
-    'version' => '1.1.1',
+    'version' => '1.1.2',
     'img' => 'img/coupons.png',
     'shop_settings' => true,
     'frontend' => true,

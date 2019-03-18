@@ -15,30 +15,41 @@ class shopCouponsPluginSettingsDialogAction extends waViewAction
             $coupon = $coupons_model->getEmptyRow();
             $coupon['code'] = self::generateCode();
         }
-        $this->view->assign('coupon', $coupon);
 
         $curm = new shopCurrencyModel();
         $currencies = $curm->getAll('code');
         $types = self::getTypes($currencies);
-        $this->view->assign('types', $types);
 
         $sm = new shopSetModel();
-        $this->view->assign('sets', $sm->getAll());
-        $this->view->assign('categories', shopCouponsHelper::getCategories());
 
         $feature_model = new shopFeatureModel();
         $features = $feature_model->select('*')->where("`count` > 0")->fetchAll('id');
-        $this->view->assign('features', $features);
-
 
         $coupons_products_model = new shopCouponsProductsPluginModel();
         $coupons_products = $coupons_products_model->getByField('coupon_id', $id, true);
 
+        $feature_values = array();
         if ($coupons_products) {
             $coupons_products = $this->prepareCouponsProducts($coupons_products);
+            foreach ($coupons_products as $coupons_product) {
+                if ($coupons_product['type'] == 'feature') {
+                    $val = explode(':', $coupons_product['value']);
+                    $feature_value_model = $feature_model::getValuesModel($features[$val[0]]['type']);
+                    $feature_values[$val[1]] = $feature_value_model->getFeatureValue($val[1]);
+                }
+            }
         }
-        $this->view->assign('coupons_products', $coupons_products);
-        $this->view->assign('currency', wa()->getConfig()->getCurrency());
+
+        $this->view->assign(array(
+            'coupon' => $coupon,
+            'types' => $types,
+            'sets' => $sm->getAll(),
+            'categories' => shopCouponsHelper::getCategories(),
+            'features' => $features,
+            'coupons_products' => $coupons_products,
+            'feature_values' => $feature_values,
+            'currency' => wa()->getConfig()->getCurrency(),
+        ));
     }
 
     private function prepareCouponsProducts($coupons_products)
